@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "youtube-playlist-copier"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+google-api-python-client = "^1.12.8"
+google-auth-oauthlib = "^0.4.2"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
