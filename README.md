@@ -1,2 +1,2 @@
 # youtube-playlist-copier
-Python script for copying any YouTube playlist into a custom playlist.
+Python script for cloning any YouTube playlist into a custom playlist.
