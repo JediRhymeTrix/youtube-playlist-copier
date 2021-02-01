@@ -1,4 +1,8 @@
+import json
+import datetime
 import google_auth_oauthlib.flow
+import google.oauth2.credentials
+import google.auth.transport
 import googleapiclient.discovery
 # import webbrowser
 # import numpy as np
@@ -19,8 +23,52 @@ query = parse_qs(urlparse(url_source).query, keep_blank_values=True)
 playlist_id = query["list"][0]
 
 # OAuth2 flow
-flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes)
-credentials = flow.run_console()
+creds = ""
+try:
+	with open('credentials_dump.json', 'r') as fp:
+		creds = json.loads(fp.read())
+except Exception as e:
+	print(e)
+
+print(creds)
+# exit(0)
+
+if not creds:
+	print("initial flow")
+	flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes)
+	credentials = flow.run_console()
+else:
+	print("refresh flow")
+	credentials = google.oauth2.credentials.Credentials(
+        creds['token'],
+        refresh_token=creds['refresh_token'],
+        id_token=creds['id_token'],
+        token_uri=creds['token_uri'],
+        client_id=creds['client_id'],
+        client_secret=creds['client_secret'],
+        scopes=creds['scopes'],
+    )
+	expiry = creds['expiry']
+	expiry_datetime = datetime.datetime.strptime(expiry,'%Y-%m-%d %H:%M:%S')
+	credentials.expiry = expiry_datetime
+	# refresh token
+	request = google.auth.transport.requests.Request()
+	if credentials.expired:
+		credentials.refresh(request)
+
+# formatting and saving credentials
+creds = {
+        'token': credentials.token,
+        'refresh_token': credentials.refresh_token,
+        'id_token':credentials.id_token,
+        'token_uri': credentials.token_uri,
+        'client_id': credentials.client_id,
+        'client_secret': credentials.client_secret,
+        'scopes': credentials.scopes,
+        'expiry':datetime.datetime.strftime(credentials.expiry,'%Y-%m-%d %H:%M:%S')
+    }
+with open('credentials_dump.json', 'w') as fp:
+	json.dump(creds, fp)
 
 print(f'get all playlist items links from {playlist_id}')
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey = API_KEY, credentials = credentials)
