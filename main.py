@@ -21,6 +21,10 @@ url_dest = 'https://www.youtube.com/playlist?list=PLWFhH0ThGhhxLEMwRqmFSsD0FD4ix
 query = parse_qs(urlparse(url_source).query, keep_blank_values=True)
 playlist_id = query["list"][0]
 
+query = parse_qs(urlparse(url_dest).query, keep_blank_values=True)
+playlist_id_dest = query["list"][0]
+
+
 # OAuth2 flow
 creds = ""
 try:
@@ -72,22 +76,36 @@ with open('credentials_dump.json', 'w') as fp:
 print(f'get all playlist items links from {playlist_id}')
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey = API_KEY, credentials = credentials)
 
-request = youtube.playlistItems().list(
+def get_playlist_items(playlist_id, youtube):
+	request = youtube.playlistItems().list(
     part = "snippet",
     playlistId = playlist_id,
-    maxResults = 500
-)
-response = request.execute()
+    maxResults = 1000
+	)
+	response = request.execute()
 
-playlist_items = [] # will be a list of dicts
-while request is not None:
-    response = request.execute()
-    playlist_items += response["items"]
-    request = youtube.playlistItems().list_next(request, response)
+	playlist_items = [] # will be a list of dicts
+	while request is not None:
+		response = request.execute()
+		playlist_items += response["items"]
+		request = youtube.playlistItems().list_next(request, response)
 
-videoIds = [
-	t["snippet"]["resourceId"]["videoId"] for t in playlist_items
+	return playlist_items
+
+playlist_items_source = get_playlist_items(playlist_id, youtube)
+playlist_items_dest = get_playlist_items(playlist_id_dest, youtube)
+
+
+videoIdsSource = [
+	t["snippet"]["resourceId"]["videoId"] for t in playlist_items_source
 ]
+
+videoIdsDest = [
+	t["snippet"]["resourceId"]["videoId"] for t in playlist_items_dest
+]
+
+# only clone missing items
+videoIds = [videoId for videoId in videoIdsSource if videoId not in videoIdsDest]
 
 urls = [ 
     f'https://www.youtube.com/watch?v={t}&list={playlist_id}&t=0s'
