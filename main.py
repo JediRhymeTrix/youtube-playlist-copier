@@ -5,7 +5,6 @@ import google.oauth2.credentials
 import google.auth.transport
 import googleapiclient.discovery
 # import webbrowser
-# import numpy as np
 # from urllib.request import urlopen
 from urllib.parse import parse_qs, urlparse
 
@@ -100,12 +99,12 @@ print(urls)
 
 # make it chronological (optional)
 videoIds.reverse() 
-print(videoIds)
+print(videoIds, len(videoIds))
 
 # STEP 2: CREATE NEW PLAYLIST FROM EXTRACTED VIDEOS:
 
 '''
-API FLOW
+API FLOW (Only usable for small playlist or playlist updates)
 '''
 # extract playlist id from url
 query = parse_qs(urlparse(url_dest).query, keep_blank_values=True)
@@ -120,27 +119,36 @@ def response_callback(request_id, response, exception):
     print(request_id, response)
     pass
 
+# chunking to handle 1000 call batch limit
+n = 1000
+videoIdsChunked = [videoIds[i:i + n] for i in range(0, len(videoIds), n)]
+print("No. of chunks: ", len(videoIdsChunked))
+
 # batch add videos to playlist (batch limit = 1000 calls)
 batch = youtube.new_batch_http_request()
 pos = 0
-for videoId in videoIds:
-	batch.add(youtube.playlistItems().insert(
-			part="snippet",
-			body={
-				"snippet": {
-					"playlistId": playlist_id, #an actual playlistid
-					"position": pos,
-					"resourceId": {
-						"kind": "youtube#video",
-						"videoId": videoId
+for videoIdChunk in videoIdsChunked:
+	for videoId in videoIdChunk:
+		batch.add(youtube.playlistItems().insert(
+				part="snippet",
+				body={
+					"snippet": {
+						"playlistId": playlist_id, #an actual playlistid
+						"position": pos,
+						"resourceId": {
+							"kind": "youtube#video",
+							"videoId": videoId
+						}
 					}
 				}
-			}
-		)
-	, callback = response_callback)
-	pos = pos + 1
-responses = batch.execute()
+			)
+		, callback = response_callback)
+		# print(pos)
+		pos = pos + 1
+	print("Batch length: ", len(videoIdChunk))
+	responses = batch.execute()
 
+print("last pos: ", pos)
 print("Done!");
 ''''''
 
@@ -164,7 +172,7 @@ MANUAL FLOW (uncomment imports!)
 
 # # trying to avoid error 413 - request is too large by chunking up the list
 # n = 50 # size of chunk (youtube playlist limit is 50)
-# videoLinksChunked = [videoLinks[i:i + n] for i in range(0, len(videoLinks), 200)]
+# videoLinksChunked = [videoLinks[i:i + n] for i in range(0, len(videoLinks), n)]
 
 # print(videoLinksChunked)
 
