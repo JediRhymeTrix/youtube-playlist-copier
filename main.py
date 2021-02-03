@@ -95,7 +95,6 @@ def get_playlist_items(playlist_id, youtube):
 playlist_items_source = get_playlist_items(playlist_id, youtube)
 playlist_items_dest = get_playlist_items(playlist_id_dest, youtube)
 
-
 videoIdsSource = [
 	t["snippet"]["resourceId"]["videoId"] for t in playlist_items_source
 ]
