@@ -4,8 +4,8 @@ import google_auth_oauthlib.flow
 import google.oauth2.credentials
 import google.auth.transport
 import googleapiclient.discovery
-import webbrowser
-from urllib.request import urlopen
+# import webbrowser
+# from urllib.request import urlopen
 from urllib.parse import parse_qs, urlparse
 
 API_KEY = "AIzaSyCrf3ID5N_1B1nrj9Xh82zUlZvRmw1wk44"
@@ -123,82 +123,82 @@ print(videoIds, len(videoIds))
 '''
 API FLOW (Only usable for small playlist or playlist updates)
 '''
-# # extract playlist id from url
-# query = parse_qs(urlparse(url_dest).query, keep_blank_values=True)
-# playlist_id = query["list"][0]
-# print(playlist_id)
+# extract playlist id from url
+query = parse_qs(urlparse(url_dest).query, keep_blank_values=True)
+playlist_id = query["list"][0]
+print(playlist_id)
 
-# def response_callback(request_id, response, exception):
-#   if exception is not None:
-#     print(request_id, exception)
-#     pass
-#   else:
-#     print(request_id, response)
-#     pass
+def response_callback(request_id, response, exception):
+  if exception is not None:
+    print(request_id, exception)
+    pass
+  else:
+    print(request_id, response)
+    pass
 
-# # chunking to handle 1000 call batch limit
-# n = 1000
-# videoIdsChunked = [videoIds[i:i + n] for i in range(0, len(videoIds), n)]
-# print("No. of chunks: ", len(videoIdsChunked))
+# chunking to handle 1000 call batch limit
+n = 1000
+videoIdsChunked = [videoIds[i:i + n] for i in range(0, len(videoIds), n)]
+print("No. of chunks: ", len(videoIdsChunked))
 
-# # batch add videos to playlist (batch limit = 1000 calls)
-# batch = youtube.new_batch_http_request()
-# pos = 0
-# for videoIdChunk in videoIdsChunked:
-# 	for videoId in videoIdChunk:
-# 		batch.add(youtube.playlistItems().insert(
-# 				part="snippet",
-# 				body={
-# 					"snippet": {
-# 						"playlistId": playlist_id, #an actual playlistid
-# 						"position": pos,
-# 						"resourceId": {
-# 							"kind": "youtube#video",
-# 							"videoId": videoId
-# 						}
-# 					}
-# 				}
-# 			)
-# 		, callback = response_callback)
-# 		# print(pos)
-# 		pos = pos + 1
-# 	print("Batch length: ", len(videoIdChunk))
-# 	responses = batch.execute()
+# batch add videos to playlist (batch limit = 1000 calls)
+batch = youtube.new_batch_http_request()
+pos = 0
+for videoIdChunk in videoIdsChunked:
+	for videoId in videoIdChunk:
+		batch.add(youtube.playlistItems().insert(
+				part="snippet",
+				body={
+					"snippet": {
+						"playlistId": playlist_id, #an actual playlistid
+						"position": pos,
+						"resourceId": {
+							"kind": "youtube#video",
+							"videoId": videoId
+						}
+					}
+				}
+			)
+		, callback = response_callback)
+		# print(pos)
+		pos = pos + 1
+	print("Batch length: ", len(videoIdChunk))
+	responses = batch.execute()
 
-# print("last pos: ", pos)
-# print("Done!");
+print("last pos: ", pos)
+print("Done!");
 ''''''
 
 '''
 MANUAL FLOW (uncomment imports!)
 '''
-videoLinks = videoIds # a ghost of broken code past
+# videoLinks = videoIds # a ghost of broken code past
 
-# trying to avoid error 413 - request is too large by chunking up the list
-n = 50 # size of chunk (youtube playlist limit is 50)
-videoLinksChunked = [videoLinks[i:i + n] for i in range(0, len(videoLinks), n)]
+# # trying to avoid error 413 - request is too large by chunking up the list
+# n = 50 # size of chunk (youtube playlist limit is 50)
+# videoLinksChunked = [videoLinks[i:i + n] for i in range(0, len(videoLinks), n)]
 
-print(videoLinksChunked)
+# print(videoLinksChunked)
 
-playListURLs = []
+# playListURLs = []
 
-for videoLinksChunk in videoLinksChunked:
-	listOfVideos = "http://www.youtube.com/watch_videos?video_ids=" + ','.join(videoLinksChunk)
-	print(listOfVideos)
+# for videoLinksChunk in videoLinksChunked:
+# 	listOfVideos = "http://www.youtube.com/watch_videos?video_ids=" + ','.join(videoLinksChunk)
+# 	print(listOfVideos)
 
-	response = urlopen(listOfVideos)
-	playListLink = response.geturl()
-	print(playListLink)
+# 	response = urlopen(listOfVideos)
+# 	playListLink = response.geturl()
+# 	print(playListLink)
 
-	playListLink = playListLink.split('list=')[1]
-	print(playListLink)
+# 	playListLink = playListLink.split('list=')[1]
+# 	print(playListLink)
 
-	# open newly created playlist (only works if script is run manually)
-	playListURL = "https://www.youtube.com/playlist?list="+playListLink+"&disable_polymer=true"
-	webbrowser.open(playListURL)
+# 	# open newly created playlist (only works if script is run manually)
+# 	playListURL = "https://www.youtube.com/playlist?list="+playListLink+"&disable_polymer=true"
+# 	webbrowser.open(playListURL)
 
-	playListURLs.append(playListURL)
+# 	playListURLs.append(playListURL)
 
-print("Playlists: ")
-print(playListURLs) # merge these after opening them individually
+# print("Playlists: ")
+# print(playListURLs) # merge these after opening them individually
 ''''''
