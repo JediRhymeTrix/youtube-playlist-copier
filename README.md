@@ -17,6 +17,6 @@ var elms = document.querySelectorAll("[id='video-title']");
 var expr = /\?v=(.+)&list/;
 var vids = [];
 for(var i = 0; i < elms.length; i++) 
-        vids.push(expr.exec(elms[i].href)[1]);
-console.log(vids)
+       vids.push((expr.exec(elms[i].href) ?? [null, null])[1])
+console.log(vids.filter(x => x))
 ```
