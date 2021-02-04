@@ -1,3 +1,4 @@
+import sys
 import json
 import datetime
 import google_auth_oauthlib.flow
@@ -9,11 +10,24 @@ import googleapiclient.discovery
 from urllib.parse import parse_qs, urlparse
 
 API_KEY = "AIzaSyCrf3ID5N_1B1nrj9Xh82zUlZvRmw1wk44"
-CLIENT_SECRETS_FILE = "credentials.json"
+CLIENT_SECRETS_FILE = "credentials/credentials.json"
 scopes = ["https://www.googleapis.com/auth/youtube"] # this is the min required scope
 
+# defaults
 url_source = 'https://www.youtube.com/playlist?list=UUMOB6uDg7e-h8OuCw8dK2_Q' # source playlist url
 url_dest = 'https://www.youtube.com/playlist?list=PLWFhH0ThGhhxLEMwRqmFSsD0FD4ix1hjs' # destination playlist url
+
+# from config
+try:
+	args = sys.argv
+	with open(f'config/{args[1]}', 'r') as fp:
+		config = json.loads(fp.read())
+		# print(config)
+		url_source = config['url_source']
+		url_dest = config['url_dest']
+		print("using config: ", args[1])
+except Exception as e:
+	print(e, "using defaults")
 
 # STEP 1: EXTRACT VIDEO LINKS FROM PLAYLIST:
 
@@ -28,7 +42,7 @@ playlist_id_dest = query["list"][0]
 # OAuth2 flow
 creds = ""
 try:
-	with open('credentials_dump.json', 'r') as fp:
+	with open('temp/credentials_dump.json', 'r') as fp:
 		creds = json.loads(fp.read())
 except Exception as e:
 	print(e)
@@ -70,7 +84,7 @@ creds = {
         'scopes': credentials.scopes,
         'expiry':datetime.datetime.strftime(credentials.expiry,'%Y-%m-%d %H:%M:%S')
     }
-with open('credentials_dump.json', 'w') as fp:
+with open('temp/credentials_dump.json', 'w') as fp:
 	json.dump(creds, fp)
 
 print(f'get all playlist items links from {playlist_id}')
