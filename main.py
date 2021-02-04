@@ -16,6 +16,7 @@ scopes = ["https://www.googleapis.com/auth/youtube"] # this is the min required 
 # defaults
 url_source = 'https://www.youtube.com/playlist?list=UUMOB6uDg7e-h8OuCw8dK2_Q' # source playlist url
 url_dest = 'https://www.youtube.com/playlist?list=PLWFhH0ThGhhxLEMwRqmFSsD0FD4ix1hjs' # destination playlist url
+use_pos = False
 
 # from config
 try:
@@ -25,6 +26,7 @@ try:
 		# print(config)
 		url_source = config['url_source']
 		url_dest = config['url_dest']
+		if 'use_pos' in config: use_pos = bool(config['use_pos'])
 		print("using config: ", args[1])
 except Exception as e:
 	print(e, "using defaults")
@@ -164,8 +166,8 @@ for videoIdChunk in videoIdsChunked:
 				part="snippet",
 				body={
 					"snippet": {
-						"playlistId": playlist_id, #an actual playlistid
-						"position": pos,
+						"playlistId": playlist_id, # an actual playlistid
+						"position": [None, pos][use_pos],
 						"resourceId": {
 							"kind": "youtube#video",
 							"videoId": videoId
