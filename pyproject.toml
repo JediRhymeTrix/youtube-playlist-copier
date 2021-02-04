@@ -2,7 +2,7 @@
 name = "youtube-playlist-copier"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = ["Vedant Vohra <ved@example.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
