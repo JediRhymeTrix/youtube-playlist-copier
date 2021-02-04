@@ -21,7 +21,7 @@ use_pos = False
 # from config
 try:
 	args = sys.argv
-	with open(f'config/{args[1]}', 'r') as fp:
+	with open(f'config/{args[1]}.json', 'r') as fp:
 		config = json.loads(fp.read())
 		# print(config)
 		url_source = config['url_source']
