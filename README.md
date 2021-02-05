@@ -2,7 +2,7 @@
 Python script for cloning any YouTube playlist into a custom playlist.
 
 #### Automation:
-CI/CD tool: https://app.buddy.works/ved914980/youtube-playlist-copier/pipelines
+CI/CD tool: https://app.buddy.works/ved914980/youtube-playlist-copier/pipelines \
 Scraping tool: https://app.distill.io/watchlist
 
 ## TODO:
