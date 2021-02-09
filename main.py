@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import datetime
@@ -11,11 +12,12 @@ from urllib.parse import parse_qs, urlparse
 
 API_KEY = "AIzaSyCrf3ID5N_1B1nrj9Xh82zUlZvRmw1wk44"
 CLIENT_SECRETS_FILE = "credentials/credentials.json"
-scopes = ["https://www.googleapis.com/auth/youtube"] # this is the min required scope
+scopes = ["https://www.googleapis.com/auth/youtube"
+          ]  # this is the min required scope
 
 # defaults
-url_source = 'https://www.youtube.com/playlist?list=UUMOB6uDg7e-h8OuCw8dK2_Q' # source playlist url
-url_dest = 'https://www.youtube.com/playlist?list=PLWFhH0ThGhhxLEMwRqmFSsD0FD4ix1hjs' # destination playlist url
+url_source = 'https://www.youtube.com/playlist?list=UUMOB6uDg7e-h8OuCw8dK2_Q'  # source playlist url
+url_dest = 'https://www.youtube.com/playlist?list=PLWFhH0ThGhhxLEMwRqmFSsD0FD4ix1hjs'  # destination playlist url
 use_pos = False
 
 # from config
@@ -40,7 +42,6 @@ playlist_id = query["list"][0]
 query = parse_qs(urlparse(url_dest).query, keep_blank_values=True)
 playlist_id_dest = query["list"][0]
 
-
 # OAuth2 flow
 creds = ""
 try:
@@ -54,53 +55,63 @@ print(creds)
 
 if not creds:
 	print("initial flow")
-	flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes)
+	flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+	    CLIENT_SECRETS_FILE, scopes)
 	credentials = flow.run_console()
 else:
 	print("refresh flow")
 	credentials = google.oauth2.credentials.Credentials(
-        creds['token'],
-        refresh_token=creds['refresh_token'],
-        id_token=creds['id_token'],
-        token_uri=creds['token_uri'],
-        client_id=creds['client_id'],
-        client_secret=creds['client_secret'],
-        scopes=creds['scopes'],
-    )
+	    creds['token'],
+	    refresh_token=creds['refresh_token'],
+	    id_token=creds['id_token'],
+	    token_uri=creds['token_uri'],
+	    client_id=creds['client_id'],
+	    client_secret=creds['client_secret'],
+	    scopes=creds['scopes'],
+	)
 	expiry = creds['expiry']
-	expiry_datetime = datetime.datetime.strptime(expiry,'%Y-%m-%d %H:%M:%S')
+	expiry_datetime = datetime.datetime.strptime(expiry, '%Y-%m-%d %H:%M:%S')
 	credentials.expiry = expiry_datetime
 	# refresh token
 	request = google.auth.transport.requests.Request()
 	if credentials.expired:
-		credentials.refresh(request)
+		try:
+			credentials.refresh(request)
+		except Exception as e:
+			print(e)
+			print("deleting stored credentials and exiting...")
+			os.remove('temp/credentials_dump.json')
+			exit(1)
 
 # formatting and saving credentials
 creds = {
-        'token': credentials.token,
-        'refresh_token': credentials.refresh_token,
-        'id_token':credentials.id_token,
-        'token_uri': credentials.token_uri,
-        'client_id': credentials.client_id,
-        'client_secret': credentials.client_secret,
-        'scopes': credentials.scopes,
-        'expiry':datetime.datetime.strftime(credentials.expiry,'%Y-%m-%d %H:%M:%S')
-    }
+    'token': credentials.token,
+    'refresh_token': credentials.refresh_token,
+    'id_token': credentials.id_token,
+    'token_uri': credentials.token_uri,
+    'client_id': credentials.client_id,
+    'client_secret': credentials.client_secret,
+    'scopes': credentials.scopes,
+    'expiry': datetime.datetime.strftime(credentials.expiry,
+                                         '%Y-%m-%d %H:%M:%S')
+}
 with open('temp/credentials_dump.json', 'w') as fp:
 	json.dump(creds, fp)
 
 print(f'get all playlist items links from {playlist_id}')
-youtube = googleapiclient.discovery.build("youtube", "v3", developerKey = API_KEY, credentials = credentials)
+youtube = googleapiclient.discovery.build("youtube",
+                                          "v3",
+                                          developerKey=API_KEY,
+                                          credentials=credentials)
+
 
 def get_playlist_items(playlist_id, youtube):
-	request = youtube.playlistItems().list(
-    part = "snippet",
-    playlistId = playlist_id,
-    maxResults = 1000
-	)
+	request = youtube.playlistItems().list(part="snippet",
+	                                       playlistId=playlist_id,
+	                                       maxResults=1000)
 	response = request.execute()
 
-	playlist_items = [] # will be a list of dicts
+	playlist_items = []  # will be a list of dicts
 	while request is not None:
 		response = request.execute()
 		playlist_items += response["items"]
@@ -108,21 +119,24 @@ def get_playlist_items(playlist_id, youtube):
 
 	return playlist_items
 
+
 playlist_items_source = get_playlist_items(playlist_id, youtube)
 playlist_items_dest = get_playlist_items(playlist_id_dest, youtube)
 
 videoIdsSource = [
-	t["snippet"]["resourceId"]["videoId"] for t in playlist_items_source
+    t["snippet"]["resourceId"]["videoId"] for t in playlist_items_source
 ]
 
 videoIdsDest = [
-	t["snippet"]["resourceId"]["videoId"] for t in playlist_items_dest
+    t["snippet"]["resourceId"]["videoId"] for t in playlist_items_dest
 ]
 
 # only clone missing items
-videoIds = [videoId for videoId in videoIdsSource if videoId not in videoIdsDest]
+videoIds = [
+    videoId for videoId in videoIdsSource if videoId not in videoIdsDest
+]
 
-urls = [ 
+urls = [
     f'https://www.youtube.com/watch?v={t}&list={playlist_id}&t=0s'
     for t in videoIds
 ]
@@ -131,11 +145,10 @@ print(f"total: {len(urls)}")
 print(urls)
 
 # make it chronological (optional)
-videoIds.reverse() 
+videoIds.reverse()
 print(videoIds, len(videoIds))
 
 # STEP 2: CREATE NEW PLAYLIST FROM EXTRACTED VIDEOS:
-
 '''
 API FLOW (Only usable for small playlist or playlist updates)
 '''
@@ -144,13 +157,15 @@ query = parse_qs(urlparse(url_dest).query, keep_blank_values=True)
 playlist_id = query["list"][0]
 print(playlist_id)
 
+
 def response_callback(request_id, response, exception):
-  if exception is not None:
-    print(request_id, exception)
-    pass
-  else:
-    print(request_id, response)
-    pass
+	if exception is not None:
+		print(request_id, exception)
+		pass
+	else:
+		print(request_id, response)
+		pass
+
 
 # chunking to handle 1000 call batch limit
 n = 1000
@@ -162,29 +177,28 @@ batch = youtube.new_batch_http_request()
 pos = 0
 for videoIdChunk in videoIdsChunked:
 	for videoId in videoIdChunk:
-		batch.add(youtube.playlistItems().insert(
-				part="snippet",
-				body={
-					"snippet": {
-						"playlistId": playlist_id, # an actual playlistid
-						"position": [None, pos][use_pos],
-						"resourceId": {
-							"kind": "youtube#video",
-							"videoId": videoId
-						}
-					}
-				}
-			)
-		, callback = response_callback)
+		batch.add(
+		    youtube.playlistItems().insert(
+		        part="snippet",
+		        body={
+		            "snippet": {
+		                "playlistId": playlist_id,  # an actual playlistid
+		                "position": [None, pos][use_pos],
+		                "resourceId": {
+		                    "kind": "youtube#video",
+		                    "videoId": videoId
+		                }
+		            }
+		        }),
+		    callback=response_callback)
 		# print(pos)
 		pos = pos + 1
 	print("Batch length: ", len(videoIdChunk))
 	responses = batch.execute()
 
 print("last pos: ", pos)
-print("Done!");
+print("Done!")
 ''''''
-
 '''
 MANUAL FLOW (uncomment imports!)
 '''
